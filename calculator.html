@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="calculator.css">
+</head>
+<body>
+    <div class="wrapper">
+        <div class="wrapper_field">
+            <div class="field">0</div>
+        </div>
+        <div class="field_btn">
+            <div class="btn_row1 btns">
+                <button class="operator_row" onclick="return0()">AC</button>
+                <button class="operator_row" onclick="plusOrMinus()">+/-</button>
+                <button class="operator_row percentage" onclick="percentageFn()">%</button>
+                <button class="operator">÷</button>
+            </div>
+            <div class="btn_row2 btns">
+                <button class="num">7</button>
+                <button class="num">8</button>
+                <button class="num">9</button>
+                <button class="operator">x</button>
+            </div>
+            <div class="btn_row3 btns">
+                <button class="num">4</button>
+                <button class="num">5</button>
+                <button class="num">6</button>
+                <button class="operator">-</button>
+            </div>
+            <div class="btn_row4 btns">
+                <button class="num">1</button>
+                <button class="num">2</button>
+                <button class="num">3</button>
+                <button class="operator">+</button>
+            </div>
+            <div class="btn_row5 btns">
+                <button class="btn_0 num" id="btn_0">
+                    <label for="btn_0">0</label>
+                </button>
+                <button onclick="decimalPointFn()">.</button>
+                <button class="sum" onclick="sumFn()">=</button>
+            </div>
+        </div>
+        <div class="main_screen"></div>
+    </div>
+    <script>
+        // div選取
+        const field = document.querySelector('.field');
+        const numBtn = document.querySelectorAll('.num');
+        const operatorBtn = document.querySelectorAll('.operator');
+        const percentage = document.querySelector('.percentage');
+
+        let fieldFontSize = 72;
+        let isInsert = false;
+        let operator = false;
+        let decimalPoint = false;
+        let isMinusValue = false;
+
+        let value = 0;
+        field.innerText = value;
+        let counterArr = [];
+
+        // 數字按鈕事件
+        function numBtnFn()
+        {
+            numBtn.forEach((item) => 
+            {
+                item.addEventListener('click', (e) => 
+                {
+                    let num = field.innerText.replace(/[^0-9]/ig, "");
+                    if (!operator && num.length === 9) return;
+                    if (operator) 
+                    {
+                        fieldFontSize = 72;
+                        fieldFontFn(fieldFontSize);
+                        value = item.innerText;
+                        field.innerText = value;
+                        operator = false;
+                        decimalPoint = false;
+                        return;
+                    }
+                    if (isMinusValue) 
+                    {
+                        if (!isInsert)
+                        {
+                            value = Number(item.innerText) * (-1);
+                            field.innerText = value;
+                            isInsert = true;
+                            return;
+                        }
+                        else
+                        {
+                            value += item.innerText;
+                            field.innerText = value;
+                            return;
+                        }
+                    }
+                    if (value[0] === '0' && !decimalPoint && item.innerText === '0') return;
+                    if (!isInsert)
+                    {
+                        value = item.innerText;
+                        field.innerText = value;
+                        isInsert = true;
+                    }
+                    else
+                    {
+                        value += item.innerText;
+                        field.innerText = value;
+                    }
+                    resizeText();
+                });
+            });
+        }
+
+        // 判斷運算符並回傳當前運算符
+        function operatorStatus(OperatorBtnValue) 
+        {
+            if (OperatorBtnValue === '+') return operator = '+';
+            if (OperatorBtnValue === '-') return operator = '-';
+            if (OperatorBtnValue === 'x') return operator = '*';
+            if (OperatorBtnValue === '÷') return operator = '/';
+        }
+        
+        // 運算符按鈕事件
+        function operatorBtnFn() 
+        {
+            operatorBtn.forEach((item) => 
+            {
+                item.addEventListener('click', (e) => 
+                {
+                    
+                    // console.log(value, counterArr);
+                    if (!operator)
+                    {
+                        counterArr.push(Number(value));
+                        operatorStatus(item.innerText);
+                        counterArr.push(operator);
+                        // operatorIdxArr.push((counterArr.length - 1));
+                    }
+                    
+                    if (operator && item.innerText !== operator)
+                    {
+
+                        counterArr.pop(counterArr[counterArr.length]);
+                        operatorStatus(item.innerText);
+                        counterArr.push(operator);
+                        
+                    }
+                    
+                    // 顯示目前總和
+                    if (counterArr.length >= 3)
+                    {
+                        if (operator === '+' || operator === '-')
+                        {
+                            let temporaryArr = counterArr.slice(0, counterArr.length - 1);
+                            // let temporaryValue = eval(temporaryArr.join(''));
+                            addAndSubtract(temporaryArr);
+                            
+                            field.innerText = temporaryArr[0];
+                            // field.innerText = temporaryValue;
+                        }
+                        if (operator === '*' || operator === '/')
+                        {
+                            field.innerText = counterArr[counterArr.length - 2];
+                        }
+                    }
+                    tenExponent(value);
+                });
+            });
+        }
+
+        // 小數點按鈕事件
+        function decimalPointFn() 
+        {
+            if (!decimalPoint) 
+            {
+                value += '.';
+                field.innerText = value;
+                isInsert = true;
+                decimalPoint = true;
+            }
+        }
+
+        // 正負號按鈕事件
+        function plusOrMinus() 
+        {
+            if (!isMinusValue && field.innerText === '0')
+            {
+                field.innerText = '-0';
+                isMinusValue = true;
+                return;
+            }
+            if (isMinusValue && field.innerText === '-0')
+            {
+                field.innerText = '0';
+                isMinusValue = false;
+                return;
+            }
+            if (value)
+            {
+                value *= (-1);
+                field.innerText = value;
+                return;
+            }
+        }
+
+        // 百分比按鈕事件
+        function percentageFn() 
+        {
+            counterArr.push(Number(value));
+            counterArr.push('/', 100);
+            addAndSubtract(counterArr);
+            field.innerText = counterArr[0];
+            value = counterArr[0];
+            counterArr = [];
+            tenExponent(value);
+            resizeText();
+        }
+
+        // 等於符號按鈕事件
+        function sumFn() 
+        {
+            // console.log(value, counterArr);
+            counterArr.push(Number(value));
+            // let sumValue = eval(counterArr.join(''));
+            // field.innerText = sumValue;
+            // value = sumValue;
+            addAndSubtract(counterArr);
+            field.innerText = counterArr[0];
+            value = counterArr[0];
+            tenExponent(value);
+
+            counterArr = [];
+            return true;
+        }
+
+        // 歸0符號按鈕事件
+        function return0()
+        {
+            // console.log(value, counterArr);
+            fieldFontSize = 72;
+            fieldFontFn(fieldFontSize);
+            isInsert = false;
+            decimalPoint = false;
+            isMinusValue = false;
+            value = 0;
+            field.innerText = 0;
+            counterArr = [];
+            operatorArr = [];
+        }
+
+        // 顯示層字體大小變化
+        function resizeText() 
+        {
+            if (field.innerText.length >= 7 && field.innerText.length <= 9)
+            {
+                fieldFontSize -= 8;
+                fieldFontFn(fieldFontSize);
+                return;
+            }
+        }
+
+        // 字體大小呈現
+        function fieldFontFn(fontValue) 
+        {
+            return field.style.fontSize = fontValue + 'px';
+        }
+
+        // 10的次方表示法
+        function tenExponent(num) 
+        {
+            let numString = num.toString();
+            
+            if (num >= 10 ** 9)
+            {
+                field.innerText = `${numString[0]}e${(numString.length - 1)}`;
+                return;
+            }
+            if (numString.length >= 6 && numString.indexOf('e') > (-1))
+            {
+                field.innerText = numString.slice((numString.length - 5));
+                return;
+            }
+        }
+
+
+        // =============== 校正數值的Function ===============
+
+        // 校正運算精確度
+        function preciseCal(arg1, arg2, oper)
+        {
+            let num1 = (arg1.toString().split('.')[1] || '').length;
+            let num2 = (arg2.toString().split('.')[1] || '').length;
+            let baseNum = Math.pow(10, Math.max(num1, num2));
+            switch(oper){
+                case '+':
+                    return (arg1 * baseNum + arg2 * baseNum) / baseNum;
+                case '-':
+                    return (arg1 * baseNum - arg2 * baseNum) / baseNum;
+                case '*':
+                    return (arg1 * baseNum * arg2 * baseNum) / baseNum ** 2;
+                case '/':
+                    return (arg1 * baseNum) / (arg2 * baseNum);
+            }
+        }
+
+        // 先乘除
+        function isMultiplyAndDivide(array) 
+        {
+            array.forEach((item, index, arr) =>
+            {
+                if (item === '*' || item === '/')
+                {
+                    let value = preciseCal(arr[index - 1], arr[index + 1], item);
+                    array.splice((index - 1), 3, value);
+                    return true;
+                }
+                if (arr.indexOf('*') === (-1) && arr.indexOf('/') === (-1))
+                {
+                    return false;
+                }
+            });
+        }
+
+        // 後加減
+        function addAndSubtract(array)
+        {
+            if (!isMultiplyAndDivide(array) && array.length >= 3)
+            {
+                array.forEach((item, index, arr) =>
+                {
+                    let value = preciseCal(arr[0], arr[2], arr[1]);
+                    array.splice(0, 3, value);
+                })
+            }
+            else {
+                isMultiplyAndDivide(array);
+            }
+        }
+
+        // =================================================
+
+        // 執行
+        numBtnFn();
+        operatorBtnFn();
+        
+    </script>
+</body>
+</html>
